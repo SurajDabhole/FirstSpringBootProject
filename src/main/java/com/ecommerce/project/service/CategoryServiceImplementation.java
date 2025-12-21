@@ -8,34 +8,55 @@ import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class CategoryServiceImplementation implements CategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    public CategoryServiceImplementation(CategoryRepository categoryRepository, ModelMapper modelMapper) {
+        this.categoryRepository = categoryRepository;
+        this.modelMapper = modelMapper;
+    }
 
     @Override
-    public CategoryResponse getAllCategories() {
-        long totalCategories = categoryRepository.count();
-        List<Category> categories = categoryRepository.findAll();
+    public CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        // Create Sort object based on sortBy field and sortOrder (ASC/DESC)
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
 
-        if (totalCategories == 0) {
+        // Create Pageable with page number, page size, and sorting
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
+        // Fetch paginated and sorted categories from database
+        Page<Category> categoryPage = categoryRepository.findAll(pageable);
+
+        List<Category> categoryList = categoryPage.getContent();
+        if (categoryList.isEmpty()) {
             throw new NoCategoriesFoundException("No categories found in the database.");
         }
 
-        List<CategoryDTO> categoryDTOS = categories.stream().
-                map(category -> modelMapper.map(category, CategoryDTO.class))
+        // Convert Category entities to CategoryDTOs
+        List<CategoryDTO> categoryDTOS = categoryList.stream()
+                .map(category -> modelMapper.map(category, CategoryDTO.class))
                 .toList();
 
+        // Build and populate the response
         CategoryResponse categoryResponse = new CategoryResponse();
         categoryResponse.setContent(categoryDTOS);
+        categoryResponse.setPageNumber(categoryPage.getNumber());
+        categoryResponse.setPageSize(categoryPage.getSize());
+        categoryResponse.setTotalElements(categoryPage.getTotalElements());
+        categoryResponse.setTotalPages(categoryPage.getTotalPages());
+        categoryResponse.setLastPage(categoryPage.isLast());
 
         return categoryResponse;
     }
@@ -63,7 +84,7 @@ public class CategoryServiceImplementation implements CategoryService {
     @Override
     public CategoryDTO deleteCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", categoryId, "Category"));
+                .orElseThrow(() -> new ResourceNotFoundException("categoryId", categoryId, "Category"));
 
         // Convert Category entity to CategoryDTO before deleting
         CategoryDTO categoryDTO = modelMapper.map(category, CategoryDTO.class);
@@ -79,7 +100,7 @@ public class CategoryServiceImplementation implements CategoryService {
     public CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId) {
         // Find the existing category by ID
         Category savedCategory = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", categoryId, "Category"));
+                .orElseThrow(() -> new ResourceNotFoundException("categoryId", categoryId, "Category"));
 
         // Get the new category name from the input DTO
         String newCategoryName = categoryDTO.getCategoryName();

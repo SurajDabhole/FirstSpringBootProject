@@ -11,4 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 public class CategoryResponse { // Used to send list of categories in response to client
     private List<CategoryDTO> content;
+    private Integer pageNumber;
+    private Integer pageSize;
+    private Long totalElements;
+    private Integer totalPages;
+    private Boolean lastPage;
 }
