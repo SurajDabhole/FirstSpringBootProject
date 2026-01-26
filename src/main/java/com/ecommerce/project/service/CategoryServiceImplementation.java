@@ -1,6 +1,7 @@
 package com.ecommerce.project.service;
 
 import com.ecommerce.project.exceptions.APIException;
+import com.ecommerce.project.exceptions.DuplicateItemException;
 import com.ecommerce.project.exceptions.NoCategoriesFoundException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
@@ -68,7 +69,7 @@ public class CategoryServiceImplementation implements CategoryService {
         // Check if category with the same name already exists
         categoryRepository.findByCategoryName(categoryName)
                 .ifPresent(_ -> {
-                    throw new APIException("Category with name '" + categoryName + "' already exists");
+                    throw new DuplicateItemException("Category", "name", categoryName);
                 });
 
         // Convert CategoryDTO to Category entity

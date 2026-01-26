@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exceptions.DuplicateItemException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
@@ -41,6 +42,9 @@ public class ProductServiceImplementation implements ProductService {
     @Override
     public ProductDTO addProduct(ProductDTO productDTO, Long categoryId) {
         Product product = modelMapper.map(productDTO, Product.class);
+        Product checkProduct = productRepository.findByProductName(product.getProductName());
+        if (checkProduct != null)
+            throw new DuplicateItemException("Product", "name", product.getProductName());
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("id", categoryId, "Category"));
         product.setImage("default.png");
@@ -54,6 +58,8 @@ public class ProductServiceImplementation implements ProductService {
     @Override
     public ProductResponse getAllProducts() {
         List<Product> products = productRepository.findAll();
+        if(products.isEmpty())
+            throw new ResourceNotFoundException("No Products Available");
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
@@ -78,6 +84,8 @@ public class ProductServiceImplementation implements ProductService {
     @Override
     public ProductResponse searchProductByKeyword(String keyword) {
         List<Product> products = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%');
+        if(products.isEmpty())
+            throw new ResourceNotFoundException("No Products Found with keyword: " + keyword);
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();

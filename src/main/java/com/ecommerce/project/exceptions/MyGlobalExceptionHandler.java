@@ -40,6 +40,13 @@ public class MyGlobalExceptionHandler {
         return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(DuplicateItemException.class)
+    public ResponseEntity<APIResponse> myDuplicateItemException(DuplicateItemException e) {
+        String message = e.getMessage();
+        APIResponse apiResponse = new APIResponse(message, false);
+        return new ResponseEntity<>(apiResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(NoCategoriesFoundException.class)
     public ResponseEntity<APIResponse> myNoCategoriesFoundException(NoCategoriesFoundException e) {
         String message = e.getMessage();
