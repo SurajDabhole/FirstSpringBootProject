@@ -50,3 +50,6 @@ desktop.ini
 # NetBeans/Gradle (if any)
 .nb-gradle/
 build/
+
+# Ignore user-uploaded or generated images
+images/
