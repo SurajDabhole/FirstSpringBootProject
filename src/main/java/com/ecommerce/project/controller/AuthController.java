@@ -12,7 +12,6 @@ import com.ecommerce.project.security.response.MessageResponse;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImplementation;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -130,10 +129,53 @@ public class AuthController {
     }
 
     @GetMapping("/username")
-    public String currentUserName(Authentication authentication){
-        if (authentication != null)
-            return authentication.getName();
-        else
-            return "NULL";
+    public ResponseEntity<String> getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal == null || "anonymousUser".equals(principal.toString())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        if (principal instanceof UserDetailsImplementation) {
+            UserDetailsImplementation userDetails = (UserDetailsImplementation) principal;
+            return ResponseEntity.ok(userDetails.getUsername());
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid user principal");
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<UserInfoResponse> getUserDetails() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal == null || "anonymousUser".equals(principal.toString())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (principal instanceof UserDetailsImplementation userDetails) {
+            List<String> roles = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .toList();
+
+            UserInfoResponse userInfoResponse = new UserInfoResponse(
+                    userDetails.getId(),
+                    userDetails.getUsername(),
+                    roles
+            );
+
+            return ResponseEntity.ok(userInfoResponse);
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 }
