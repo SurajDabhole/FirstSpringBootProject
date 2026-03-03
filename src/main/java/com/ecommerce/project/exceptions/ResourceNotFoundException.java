@@ -12,10 +12,10 @@ public class ResourceNotFoundException extends RuntimeException{
     public ResourceNotFoundException(String message){
         super(message);
     }
-    public ResourceNotFoundException(String field, String fieldName, String resourceName) {
-        super(String.format("%s not found with %s : %s", resourceName, field, fieldName));
+    public ResourceNotFoundException(String resourceName, String field, Long fieldId) {
+        super(String.format("%s not found with %s : %d", resourceName, field, fieldId));
         this.field = field;
-        this.fieldName = fieldName;
+        this.fieldId = fieldId;
         this.resourceName = resourceName;
     }
 
